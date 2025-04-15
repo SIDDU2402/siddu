@@ -7,14 +7,40 @@ const authRoutes = require('./routes/auth');
 const recipeRoutes = require('./routes/recipes');
 
 // Load environment variables
-dotenv.config({ path: './.env.local' });
+// In production (Vercel), environment variables are automatically loaded
+// In development, load from .env.local
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config({ path: './.env.local' });
+} else {
+    // For debugging in production
+    console.log('Running in production mode');
+}
 
 const app = express();
 
 // Middleware
-app.use(cors());
+// Configure CORS to allow requests from any origin in production
+app.use(cors({
+    origin: process.env.NODE_ENV === 'production' ? '*' : 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add a simple health check route
+app.get('/', (req, res) => {
+    res.status(200).json({ message: 'Recipe API is running' });
+});
+
+// Add a debug route to check environment variables
+app.get('/debug', (req, res) => {
+    res.status(200).json({
+        nodeEnv: process.env.NODE_ENV,
+        mongoDbUri: process.env.MONGODB_URI ? 'Set (hidden)' : 'Not set',
+        port: process.env.PORT
+    });
+});
 
 // MongoDB Connection
 // Use MongoDB URI from environment variables
@@ -28,7 +54,7 @@ const MONGODB_OPTIONS = {
     dbName: 'recipe-sharing' // Explicitly set database name
 };
 
-console.log('Connecting to MongoDB Atlas at:', MONGODB_URI);
+console.log('Connecting to MongoDB Atlas...');
 
 // Attempt to connect to MongoDB Atlas
 mongoose.connect(MONGODB_URI, MONGODB_OPTIONS)
@@ -38,7 +64,6 @@ mongoose.connect(MONGODB_URI, MONGODB_OPTIONS)
 .catch((err) => {
     console.error('MongoDB Atlas connection error:', err);
     console.error('Connection details:', {
-        uri: MONGODB_URI.replace(/:[^:]*@/, ':****@'), // Hide password in logs
         error_code: err.code,
         error_name: err.name,
         error_message: err.message
@@ -48,9 +73,9 @@ mongoose.connect(MONGODB_URI, MONGODB_OPTIONS)
     console.warn('WARNING: Running without database connection. Some features may not work.');
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/recipes', recipeRoutes);
+// Routes - no /api prefix for Vercel serverless functions
+app.use('/auth', authRoutes);
+app.use('/recipes', recipeRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -64,7 +89,7 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
+    res.status(404).json({ message: 'Route not found', path: req.path });
 });
 
 // Use a different port to avoid conflicts
