@@ -39,9 +39,9 @@ import {
   Upload as UploadIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
+import { recipeService } from '../services/api';
 
 // Animation variants
 const fadeIn = {
@@ -214,21 +214,13 @@ const CreateRecipe = () => {
         return;
       }
 
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
+      if (!isAuthenticated) {
         setError('You must be logged in to create a recipe');
         setTimeout(() => navigate('/login'), 2000);
         return;
       }
 
-      const response = await axios.post(
-        'http://localhost:5000/api/recipes',
-        formattedData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await recipeService.create(formattedData);
       navigate(`/recipe/${response.data._id}`);
     } catch (error) {
       console.error('Error creating recipe:', error.response?.data || error.message);

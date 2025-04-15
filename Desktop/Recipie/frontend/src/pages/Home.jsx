@@ -30,9 +30,9 @@ import {
   Favorite as FavoriteIcon,
   ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
+import { recipeService } from '../services/api';
 
 // Hero section background images
 const heroImages = [
@@ -188,7 +188,6 @@ const Home = () => {
     const fetchRecipes = async () => {
       try {
         setLoading(true);
-        let url = 'http://localhost:5000/api/recipes';
         const params = {};
         
         if (category && category !== 'all') {
@@ -199,7 +198,7 @@ const Home = () => {
           params.search = searchTerm;
         }
         
-        const response = await axios.get(url, { params });
+        const response = await recipeService.getAll(params);
         setRecipes(response.data);
       } catch (error) {
         console.error('Error fetching recipes:', error);

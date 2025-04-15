@@ -47,8 +47,8 @@ import {
   StarBorder as StarBorderIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { recipeService } from '../services/api';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -95,21 +95,11 @@ const Profile = () => {
       });
 
       // Fetch user's recipes
-      const recipesResponse = await axios.get(
-        `http://localhost:5000/api/recipes/user/${user.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const recipesResponse = await recipeService.getUserRecipes(user.id);
       setUserRecipes(recipesResponse.data);
 
       // Fetch favorite recipes
-      const favoritesResponse = await axios.get(
-        `http://localhost:5000/api/recipes/favorites`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const favoritesResponse = await recipeService.getFavorites();
       setFavoriteRecipes(favoritesResponse.data);
       setLoading(false);
       setRefreshing(false);
@@ -162,13 +152,7 @@ const Profile = () => {
   const handleProfileUpdate = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(
-        'http://localhost:5000/api/users/profile',
-        profileForm,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await recipeService.updateProfile(profileForm, token);
 
       setUserProfile({
         ...userProfile,
@@ -218,12 +202,7 @@ const Profile = () => {
   const handleDeleteRecipe = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(
-        `http://localhost:5000/api/recipes/${selectedRecipe._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await recipeService.deleteRecipe(selectedRecipe._id, token);
 
       setUserRecipes(userRecipes.filter(recipe => recipe._id !== selectedRecipe._id));
       

@@ -33,9 +33,9 @@ import {
   AccessTime as AccessTimeIcon,
   Print as PrintIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
+import { recipeService } from '../services/api';
 
 // Animation variants
 const fadeIn = {
@@ -73,7 +73,7 @@ const RecipeDetail = () => {
       try {
         setLoading(true);
         setError('');
-        const response = await axios.get(`http://localhost:5000/api/recipes/${id}`);
+        const response = await recipeService.getById(id);
         console.log('Recipe data:', response.data); // Debug log
         setRecipe(response.data);
       } catch (error) {
@@ -96,14 +96,7 @@ const RecipeDetail = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `http://localhost:5000/api/recipes/${id}/rate`,
-        { rating: 5 }, // Default to 5 stars for a like
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await recipeService.rate(id, { rating: 5 });
       setRecipe(response.data);
     } catch (error) {
       console.error('Error liking recipe:', error);

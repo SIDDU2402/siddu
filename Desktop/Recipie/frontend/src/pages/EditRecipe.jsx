@@ -34,8 +34,8 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { recipeService } from '../services/api';
 
 const difficultyLevels = ['Easy', 'Medium', 'Hard'];
 const categories = [
@@ -77,10 +77,7 @@ const EditRecipe = () => {
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:5000/api/recipes/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await recipeService.getById(id);
         
         // Check if the recipe belongs to the current user
         if (response.data.author._id !== user.id) {
@@ -176,14 +173,7 @@ const EditRecipe = () => {
 
   const handleSubmit = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `http://localhost:5000/api/recipes/${id}`,
-        recipe,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await recipeService.update(id, recipe);
       setSuccess(true);
       setTimeout(() => navigate(`/recipe/${id}`), 2000);
     } catch (error) {

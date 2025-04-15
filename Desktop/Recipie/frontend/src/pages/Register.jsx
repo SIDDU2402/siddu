@@ -27,8 +27,8 @@ import {
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/api';
 
 const Register = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -93,7 +93,7 @@ const Register = () => {
 
     try {
       // Register the user
-      await axios.post('http://localhost:5000/api/auth/register', {
+      await authService.register({
         username: formData.username,
         email: formData.email,
         password: formData.password,

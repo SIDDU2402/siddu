@@ -2,10 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 const recipeRoutes = require('./routes/recipes');
 
-dotenv.config();
+// Load environment variables
+dotenv.config({ path: './.env.local' });
 
 const app = express();
 
@@ -15,16 +17,35 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/recipe-sharing';
-
-mongoose.connect(MONGODB_URI, {
+// Use MongoDB URI from environment variables
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_OPTIONS = {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 30000, // Increase timeout for Atlas connection
+    connectTimeoutMS: 30000,
+    socketTimeoutMS: 30000,
+    dbName: 'recipe-sharing' // Explicitly set database name
+};
+
+console.log('Connecting to MongoDB Atlas at:', MONGODB_URI);
+
+// Attempt to connect to MongoDB Atlas
+mongoose.connect(MONGODB_URI, MONGODB_OPTIONS)
+.then(() => {
+    console.log('Connected to MongoDB Atlas successfully');
 })
-.then(() => console.log('Connected to MongoDB'))
 .catch((err) => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
+    console.error('MongoDB Atlas connection error:', err);
+    console.error('Connection details:', {
+        uri: MONGODB_URI.replace(/:[^:]*@/, ':****@'), // Hide password in logs
+        error_code: err.code,
+        error_name: err.name,
+        error_message: err.message
+    });
+    
+    // Continue running the application even if MongoDB connection fails
+    console.warn('WARNING: Running without database connection. Some features may not work.');
 });
 
 // Routes
@@ -46,8 +67,15 @@ app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 5000;
+// Use a different port to avoid conflicts
+const PORT = process.env.PORT || 3002;
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+// Export for Vercel serverless functions
+module.exports = app;
